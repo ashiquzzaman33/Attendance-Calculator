@@ -1,10 +1,14 @@
+package com.attendence;
+
 import java.awt.Dimension;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
+import java.awt.image.WritableRenderedImage;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 
@@ -17,6 +21,9 @@ import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 
+import com.exports.PdfMaker;
+import com.exports.TxtMaker;
+import com.lowagie.text.DocumentException;
 import com.utility.ImageUtility;
 
 public class Main extends JFrame {
@@ -37,14 +44,17 @@ public class Main extends JFrame {
 	private int outputImageHeight = 3200;
 	private int windowHeight = 600;
 	public static int MARKER_RADIUS = 20;
-	private double scaledFactorX;
-	private double scaledFactorY;
+
+	private Rectangle sheetHeaderRectangle = new Rectangle(100, 90, 1820, 340);
 
 	private JMenuBar menuBar;
 	private JMenu fileMenu;
 	private JMenuItem openMenuItem;
 	private JMenuItem closeMenuItem;
 	private JMenuItem mntmExit;
+	private JMenu exportMenu;
+	private JMenuItem exportAsPdf;
+	private JMenuItem exportAsPlainText;
 	private BufferedImage bufferedImage;
 	private JMenu mnOperations;
 	private JMenuItem mntmProcess;
@@ -52,6 +62,7 @@ public class Main extends JFrame {
 	public static final int FIRST_Y_COORDINATE = 127;
 	public static final int HEIGHT_OF_EACH_ROW = 107;
 	public Dimension screenSize = new Dimension(900, 1400);
+	public BufferedImage sheetHeader;
 
 	private ArrayList<StudentInfo> studentInfo = new ArrayList<>();
 
@@ -84,6 +95,14 @@ public class Main extends JFrame {
 				File file = chooser.getSelectedFile();
 				if (file != null && file.getName().endsWith(".jpg") || file.getName().endsWith(".png")) {
 					try {
+
+						sheetHeader = ImageUtility.cropImage(
+								ImageUtility.getScaledImage(outputImageWidth, outputImageHeight, ImageIO.read(file)),
+								sheetHeaderRectangle);
+						
+						ImageIO.write(ImageUtility.cropImage(
+								ImageUtility.getScaledImage(outputImageWidth, outputImageHeight, ImageIO.read(file)),
+								IMAGE_RECTANGLE), "jpg", new File("Scaled.jpg"));
 
 						bufferedImage = ImageUtility.getScaledImage(outputImageWidth, outputImageHeight,
 								ImageUtility.cropImage(ImageIO.read(file), IMAGE_RECTANGLE));
@@ -133,7 +152,7 @@ public class Main extends JFrame {
 					processImage();
 
 					long stopTime = System.nanoTime();
-					System.out.println(("Elaps Time: "+(stopTime - startTime)/1000000000L+" Seconds"));
+					System.out.println(("Elaps Time: " + (stopTime - startTime) / 1000000000L + " Seconds"));
 
 				} catch (Exception e1) {
 					e1.printStackTrace();
@@ -143,18 +162,99 @@ public class Main extends JFrame {
 		});
 		mnOperations.add(mntmProcess);
 
+		// Export Menu
+		exportMenu = new JMenu("Export");
+		exportAsPdf = new JMenuItem("As PDF");
+		exportAsPdf.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+
+				if (studentInfo.size() == 0) {
+					JOptionPane.showMessageDialog(Main.this, "Please Process First.");
+
+				} else {
+					JFileChooser chooser = new JFileChooser();
+					chooser.showSaveDialog(Main.this);
+					File file = chooser.getSelectedFile();
+					if (file != null) {
+
+						try {
+							PdfMaker maker = new PdfMaker(studentInfo, sheetHeader, file.getAbsolutePath() + ".pdf");
+							maker.makePdf();
+						} catch (DocumentException es) {
+							es.printStackTrace();
+						} catch (IOException e1) {
+							e1.printStackTrace();
+						}
+
+					} else {
+						JOptionPane.showMessageDialog(Main.this, "Please Select A File.");
+					}
+
+				}
+			}
+		});
+
+		exportAsPlainText = new JMenuItem("As Plain Text");
+		exportAsPlainText.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+
+				if (studentInfo.size() == 0) {
+					JOptionPane.showMessageDialog(Main.this, "Please Process First.");
+
+				} else {
+					JFileChooser chooser = new JFileChooser();
+					chooser.showSaveDialog(Main.this);
+					File file = chooser.getSelectedFile();
+
+					if (file != null) {
+						TxtMaker maker = new TxtMaker(studentInfo, file.getAbsolutePath()+".txt");
+						maker.makeTxtFile();
+
+					} else {
+						JOptionPane.showMessageDialog(Main.this, "Please Select A File.");
+					}
+				}
+			}
+		});
+
+		exportMenu.add(exportAsPdf);
+		exportMenu.addSeparator();
+		exportMenu.add(exportAsPlainText);
+
+		menuBar.add(exportMenu);
+
 	}
 
 	public void processImage() throws IOException {
 
-		Rectangle c = new Rectangle(0, FIRST_Y_COORDINATE, bufferedImage.getWidth(),
-				bufferedImage.getHeight() - FIRST_Y_COORDINATE);
-		bufferedImage = ImageUtility.getScaledImage(outputImageWidth, outputImageHeight,
-				ImageUtility.cropImage(bufferedImage, c));
+		if (bufferedImage == null) {
+			JOptionPane.showMessageDialog(Main.this, "Please Add Attendance Sheet First");
+		} else {
+			
+			Rectangle c = new Rectangle(0, FIRST_Y_COORDINATE, bufferedImage.getWidth(),
+					bufferedImage.getHeight() - FIRST_Y_COORDINATE);
+			
+			bufferedImage = ImageUtility.getScaledImage(outputImageWidth, outputImageHeight,
+					ImageUtility.cropImage(bufferedImage, c));
+			
+			
+			
+			splitStudentInfo();
+			imagePanel.setImage(screenSize.width, screenSize.height, bufferedImage);
 
+		}
+
+	}
+
+	private void splitStudentInfo() {
 		int pos = 0;
 		for (int i = 0; i < 30; i++) {
-			BufferedImage bf = new BufferedImage(bufferedImage.getWidth(), HEIGHT_OF_EACH_ROW, bufferedImage.getType());
+			BufferedImage bf = new BufferedImage(bufferedImage.getWidth(), HEIGHT_OF_EACH_ROW,
+					bufferedImage.getType());
 			Rectangle r = new Rectangle(0, pos, bufferedImage.getWidth(),
 					Math.min(HEIGHT_OF_EACH_ROW, bufferedImage.getHeight() - pos));
 
@@ -163,37 +263,10 @@ public class Main extends JFrame {
 			studentInfo.add(new StudentInfo(bf, i));
 			pos += HEIGHT_OF_EACH_ROW;
 		}
-
-		imagePanel.setImage(screenSize.width, screenSize.height, bufferedImage);
-
-		for (int i = 0; i < studentInfo.size(); i++) {
-
-			String fileP = (i + 1) + "";
-			System.out.print(studentInfo.get(i).getName() + "  ");
-			System.out.println(studentInfo.get(i).getRoll());
-
-			// ImageIO.write(studentInfo.get(i).getNameImage(), "jpg", new
-			// File(fileP + "_name.jpg"));
-			// ImageIO.write(studentInfo.get(i).getRoll(), "jpg", new File(fileP
-			// + "_roll.jpg"));
-
-		}
-
-		System.out.println("Complete");
 	}
 
 	public static void main(String[] args) throws IOException {
-		long startTime = System.nanoTime();
 		new Main();
-		long stopTime = System.nanoTime();
-		System.out.println(stopTime - startTime);
-		
-
-	}
-
-	public void setScaledFactor(double x, double y) {
-		scaledFactorX = x;
-		scaledFactorY = y;
 	}
 
 }

@@ -1,3 +1,4 @@
+package com.attendence;
 import java.awt.Image;
 import java.awt.Point;
 import java.awt.Rectangle;
@@ -24,7 +25,7 @@ public class StudentInfo {
 	private static int ATTENDENCE_GRID_WIDTH = 114;
 	private static int GRID_HEIGHT = 107;
 	private Point attendenceGridULCorner = new Point(856, 0);
-	private int outputImageHeight = 300;
+	private int outputImageHeight = 400;
 	
 	
 	public StudentInfo(BufferedImage imageContainingStdInfo, int idx) {
@@ -37,10 +38,13 @@ public class StudentInfo {
 		double nameRatio = (double)NAME_WIDTH/imageContainingStdInfo.getHeight();
 		
 		roll = ImageToText.getText(ImageUtility.getScaledImage((int)(rollRatio*outputImageHeight), outputImageHeight, 
-				ImageUtility.cropImage(imageContainingStdInfo, rollRect)));
+				ImageUtility.cropImage(imageContainingStdInfo, rollRect)), true);
+		
 		
 		name = ImageToText.getText(ImageUtility.getScaledImage((int)(nameRatio*outputImageHeight), outputImageHeight, 
-				ImageUtility.cropImage(imageContainingStdInfo, nameRect)));
+				ImageUtility.cropImage(imageContainingStdInfo, nameRect)), false);
+		
+
 		
 		
 		int p = attendenceGridULCorner.x;
