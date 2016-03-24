@@ -48,12 +48,12 @@ public class PdfMaker {
 		PdfPTable table = new PdfPTable(10);
 		
 		
-		PdfPTable headerTable = new PdfPTable(1);
-		cell = headerTable.getDefaultCell();
-		cell.setImage(sheetHeaderImage);
-		cell.setBorder(Rectangle.NO_BORDER);
-		headerTable.addCell(cell);;
-		document.add(headerTable);
+//		PdfPTable headerTable = new PdfPTable(1);
+//		cell = headerTable.getDefaultCell();
+//		cell.setImage(sheetHeaderImage);
+//		cell.setBorder(Rectangle.NO_BORDER);
+//		headerTable.addCell(cell);;
+//		document.add(headerTable);
 
 		
 		cell = new PdfPCell(new Phrase("Sl No."));

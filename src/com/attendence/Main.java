@@ -40,10 +40,9 @@ public class Main extends JFrame {
 			COORNER_COORDINATES[1].x - COORNER_COORDINATES[0].x, COORNER_COORDINATES[3].y - COORNER_COORDINATES[0].y);
 	private int imageWidth = 900;
 	private int imageHeight = 1400;
-	private int outputImageWidth = 2000;
-	private int outputImageHeight = 3200;
+	public final static int OUTPUT_IMAGE_WIDTH = 2000;
+	public final static int OUTPUT_IMAGE_HEIGHT = 3200;
 	private int windowHeight = 600;
-	public static int MARKER_RADIUS = 20;
 
 	private Rectangle sheetHeaderRectangle = new Rectangle(100, 90, 1820, 340);
 
@@ -61,7 +60,7 @@ public class Main extends JFrame {
 	private ImagePanel imagePanel;
 	public static final int FIRST_Y_COORDINATE = 127;
 	public static final int HEIGHT_OF_EACH_ROW = 107;
-	public Dimension screenSize = new Dimension(900, 1400);
+
 	public BufferedImage sheetHeader;
 
 	private ArrayList<StudentInfo> studentInfo = new ArrayList<>();
@@ -96,22 +95,28 @@ public class Main extends JFrame {
 				if (file != null && file.getName().endsWith(".jpg") || file.getName().endsWith(".png")) {
 					try {
 
-						sheetHeader = ImageUtility.cropImage(
-								ImageUtility.getScaledImage(outputImageWidth, outputImageHeight, ImageIO.read(file)),
-								sheetHeaderRectangle);
-						
-						ImageIO.write(ImageUtility.cropImage(
-								ImageUtility.getScaledImage(outputImageWidth, outputImageHeight, ImageIO.read(file)),
-								IMAGE_RECTANGLE), "jpg", new File("Scaled.jpg"));
+						// sheetHeader = ImageUtility.cropImage(
+						// ImageUtility.getScaledImage(outputImageWidth,
+						// outputImageHeight, ImageIO.read(file)),
+						// sheetHeaderRectangle);
 
-						bufferedImage = ImageUtility.getScaledImage(outputImageWidth, outputImageHeight,
-								ImageUtility.cropImage(ImageIO.read(file), IMAGE_RECTANGLE));
+						// ImageIO.write(ImageUtility.cropImage(
+						// ImageUtility.getScaledImage(outputImageWidth,
+						// outputImageHeight, ImageIO.read(file)),
+						// IMAGE_RECTANGLE), "jpg", new File("Scaled.jpg"));
+
+						// bufferedImage =
+						// ImageUtility.getScaledImage(outputImageWidth,
+						// outputImageHeight,
+						// ImageUtility.cropImage(ImageIO.read(file),
+						// IMAGE_RECTANGLE));
+						bufferedImage = ImageIO.read(file);
 
 					} catch (IOException e1) {
 						e1.printStackTrace();
 					}
 
-					imagePanel.setImage(screenSize.width, screenSize.height, bufferedImage);
+					imagePanel.setImage(bufferedImage);
 
 				} else {
 					JOptionPane.showMessageDialog(Main.this, "Please Select JPG or PNG image.");
@@ -121,7 +126,7 @@ public class Main extends JFrame {
 		closeMenuItem = new JMenuItem("Close");
 		closeMenuItem.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				imagePanel.setImage(0, 0, null);
+				imagePanel.setImage(null);
 			}
 		});
 
@@ -211,7 +216,7 @@ public class Main extends JFrame {
 					File file = chooser.getSelectedFile();
 
 					if (file != null) {
-						TxtMaker maker = new TxtMaker(studentInfo, file.getAbsolutePath()+".txt");
+						TxtMaker maker = new TxtMaker(studentInfo, file.getAbsolutePath() + ".txt");
 						maker.makeTxtFile();
 
 					} else {
@@ -232,19 +237,26 @@ public class Main extends JFrame {
 	public void processImage() throws IOException {
 
 		if (bufferedImage == null) {
-			JOptionPane.showMessageDialog(Main.this, "Please Add Attendance Sheet First");
+			JOptionPane.showMessageDialog(Main.this, "Please Add Attendance Sheet");
 		} else {
-			
-			Rectangle c = new Rectangle(0, FIRST_Y_COORDINATE, bufferedImage.getWidth(),
-					bufferedImage.getHeight() - FIRST_Y_COORDINATE);
-			
-			bufferedImage = ImageUtility.getScaledImage(outputImageWidth, outputImageHeight,
-					ImageUtility.cropImage(bufferedImage, c));
-			
-			
-			
-			splitStudentInfo();
-			imagePanel.setImage(screenSize.width, screenSize.height, bufferedImage);
+			bufferedImage = imagePanel.getCropedImage();
+			if (bufferedImage == null) {
+				JOptionPane.showMessageDialog(Main.this, "Please Select Four Coorner Point.");
+
+			} else {
+				
+				ImageIO.write(bufferedImage, "jpg", new File("Fixed.jpg"));
+				Rectangle c = new Rectangle(0, FIRST_Y_COORDINATE, bufferedImage.getWidth(),
+						bufferedImage.getHeight() - FIRST_Y_COORDINATE);
+
+				bufferedImage = ImageUtility.getScaledImage(OUTPUT_IMAGE_WIDTH, OUTPUT_IMAGE_HEIGHT,
+						ImageUtility.cropImage(bufferedImage, c));
+
+				splitStudentInfo();
+				imagePanel.setImage(bufferedImage);
+				imagePanel.setProcessed();
+
+			}
 
 		}
 
@@ -253,8 +265,7 @@ public class Main extends JFrame {
 	private void splitStudentInfo() {
 		int pos = 0;
 		for (int i = 0; i < 30; i++) {
-			BufferedImage bf = new BufferedImage(bufferedImage.getWidth(), HEIGHT_OF_EACH_ROW,
-					bufferedImage.getType());
+			BufferedImage bf = new BufferedImage(bufferedImage.getWidth(), HEIGHT_OF_EACH_ROW, bufferedImage.getType());
 			Rectangle r = new Rectangle(0, pos, bufferedImage.getWidth(),
 					Math.min(HEIGHT_OF_EACH_ROW, bufferedImage.getHeight() - pos));
 
