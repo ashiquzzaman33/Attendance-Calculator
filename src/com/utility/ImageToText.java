@@ -29,9 +29,9 @@ public class ImageToText {
 					str.setCharAt(i, 'o');
 				else if(str.charAt(i)=='1')
 					str.setCharAt(i, 'l');
-				else if (!(Character.isAlphabetic(str.charAt(i))||str.charAt(i)=='.'||
+				else if (!(Character.isLetter(str.charAt(i))||str.charAt(i)=='.'||
 						str.charAt(i)=='-')) {
-					str.setCharAt(i, ' ');
+						str.setCharAt(i, ' ');
 				}
 			}
 	

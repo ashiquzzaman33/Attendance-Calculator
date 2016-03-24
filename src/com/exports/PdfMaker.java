@@ -33,7 +33,7 @@ public class PdfMaker {
 		studentInfo = stdInfo;
 		this.sheetHeader = sheetHeader;
 		//this.sheetHeaderImage = Image.getInstance(ImageUtility.getScaledImage(400, 150, this.sheetHeader), null);
-		this.sheetHeaderImage = Image.getInstance( this.sheetHeader, null);
+		//this.sheetHeaderImage = Image.getInstance( this.sheetHeader, null);
 
 	}
 	

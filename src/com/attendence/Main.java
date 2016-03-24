@@ -21,6 +21,8 @@ import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 
+import org.w3c.dom.css.Rect;
+
 import com.exports.PdfMaker;
 import com.exports.TxtMaker;
 import com.lowagie.text.DocumentException;
@@ -33,18 +35,18 @@ public class Main extends JFrame {
 	 */
 	private static final long serialVersionUID = 1L;
 	// Margin form Four side
-
-	public static Point[] COORNER_COORDINATES = { new Point(106, 425), new Point(1715, 425), new Point(1715, 2638),
-			new Point(106, 2638) };
-	public static Rectangle IMAGE_RECTANGLE = new Rectangle(COORNER_COORDINATES[0].x, COORNER_COORDINATES[0].y,
-			COORNER_COORDINATES[1].x - COORNER_COORDINATES[0].x, COORNER_COORDINATES[3].y - COORNER_COORDINATES[0].y);
+//
+//	public static Point[] COORNER_COORDINATES = { new Point(106, 425), new Point(1715, 425), new Point(1715, 2638),
+//			new Point(106, 2638) };
+//	public static Rectangle IMAGE_RECTANGLE = new Rectangle(COORNER_COORDINATES[0].x, COORNER_COORDINATES[0].y,
+//			COORNER_COORDINATES[1].x - COORNER_COORDINATES[0].x, COORNER_COORDINATES[3].y - COORNER_COORDINATES[0].y);
 	private int imageWidth = 900;
 	private int imageHeight = 1400;
 	public final static int OUTPUT_IMAGE_WIDTH = 2000;
 	public final static int OUTPUT_IMAGE_HEIGHT = 3200;
 	private int windowHeight = 600;
 
-	private Rectangle sheetHeaderRectangle = new Rectangle(100, 90, 1820, 340);
+	//private Rectangle sheetHeaderRectangle = new Rectangle(100, 90, 1820, 340);
 
 	private JMenuBar menuBar;
 	private JMenu fileMenu;
@@ -58,8 +60,10 @@ public class Main extends JFrame {
 	private JMenu mnOperations;
 	private JMenuItem mntmProcess;
 	private ImagePanel imagePanel;
-	public static final int FIRST_Y_COORDINATE = 127;
-	public static final int HEIGHT_OF_EACH_ROW = 107;
+	public static final int FIRST_Y_COORDINATE = 0;
+	public static final int HEIGHT_OF_EACH_ROW = 106;
+	private static double HEIGHT_ADJUST = 0.2f;
+	public static final int UPPER_LEFT_CORNER_Y = 127;
 
 	public BufferedImage sheetHeader;
 
@@ -95,21 +99,7 @@ public class Main extends JFrame {
 				if (file != null && file.getName().endsWith(".jpg") || file.getName().endsWith(".png")) {
 					try {
 
-						// sheetHeader = ImageUtility.cropImage(
-						// ImageUtility.getScaledImage(outputImageWidth,
-						// outputImageHeight, ImageIO.read(file)),
-						// sheetHeaderRectangle);
-
-						// ImageIO.write(ImageUtility.cropImage(
-						// ImageUtility.getScaledImage(outputImageWidth,
-						// outputImageHeight, ImageIO.read(file)),
-						// IMAGE_RECTANGLE), "jpg", new File("Scaled.jpg"));
-
-						// bufferedImage =
-						// ImageUtility.getScaledImage(outputImageWidth,
-						// outputImageHeight,
-						// ImageUtility.cropImage(ImageIO.read(file),
-						// IMAGE_RECTANGLE));
+	
 						bufferedImage = ImageIO.read(file);
 
 					} catch (IOException e1) {
@@ -240,17 +230,21 @@ public class Main extends JFrame {
 			JOptionPane.showMessageDialog(Main.this, "Please Add Attendance Sheet");
 		} else {
 			bufferedImage = imagePanel.getCropedImage();
+			
 			if (bufferedImage == null) {
 				JOptionPane.showMessageDialog(Main.this, "Please Select Four Coorner Point.");
 
 			} else {
 				
-				ImageIO.write(bufferedImage, "jpg", new File("Fixed.jpg"));
-				Rectangle c = new Rectangle(0, FIRST_Y_COORDINATE, bufferedImage.getWidth(),
-						bufferedImage.getHeight() - FIRST_Y_COORDINATE);
+				Rectangle corrInfoRect = new Rectangle(0, UPPER_LEFT_CORNER_Y, bufferedImage.getWidth(), bufferedImage.getHeight()-UPPER_LEFT_CORNER_Y);
+				bufferedImage = ImageUtility.cropImage(bufferedImage, corrInfoRect);
+				
 
 				bufferedImage = ImageUtility.getScaledImage(OUTPUT_IMAGE_WIDTH, OUTPUT_IMAGE_HEIGHT,
-						ImageUtility.cropImage(bufferedImage, c));
+						bufferedImage);
+				
+				ImageIO.write(bufferedImage, "jpg", new File("finalImage.jpg"));
+
 
 				splitStudentInfo();
 				imagePanel.setImage(bufferedImage);
@@ -263,16 +257,22 @@ public class Main extends JFrame {
 	}
 
 	private void splitStudentInfo() {
-		int pos = 0;
+		double pos = 0;
 		for (int i = 0; i < 30; i++) {
+			
 			BufferedImage bf = new BufferedImage(bufferedImage.getWidth(), HEIGHT_OF_EACH_ROW, bufferedImage.getType());
-			Rectangle r = new Rectangle(0, pos, bufferedImage.getWidth(),
-					Math.min(HEIGHT_OF_EACH_ROW, bufferedImage.getHeight() - pos));
+
+			Rectangle r = new Rectangle(0, (int)pos, bufferedImage.getWidth(),
+					(int)(Math.min(HEIGHT_OF_EACH_ROW, bufferedImage.getHeight() -pos)));
 
 			bf = ImageUtility.cropImage(bufferedImage, r);
-
+			try {
+				ImageIO.write(bf, "jpg", new File((i+1)+".jpg"));
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 			studentInfo.add(new StudentInfo(bf, i));
-			pos += HEIGHT_OF_EACH_ROW;
+			pos += (double)HEIGHT_OF_EACH_ROW+HEIGHT_ADJUST;
 		}
 	}
 
